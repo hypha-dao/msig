@@ -10,7 +10,6 @@ cleos -u https://test.telos.kitchen set contract -sjd -x 186400 test.hypha test/
 eosc -u https://test.telos.kitchen --vault-file ../mt.hypha.json system setcontract test.hypha test/test.wasm test/test.abi --write-transaction test_deploy.json
 ```
 
-
 # Step 2: Modify transaction file
 > NOTE: TODO: we can automate this step with ```daoctl``` soon.
 
@@ -138,7 +137,7 @@ cleos -u https://test.telos.kitchen push action msig.hypha approve '{
   "proposal_name":"mytestdeploy",
   "level":
     {
-      "actor": "teloskitchen",
+      "actor": "buckyjohnson",
       "permission": "active"
     }
 }' -p buckyjohnson
@@ -146,16 +145,16 @@ cleos -u https://test.telos.kitchen push action msig.hypha approve '{
 
 ### eosc
 ``` sh
-# approve for teloskitchen
-eosc -u https://test.telos.kitchen --vault-file ../../teloskitchen/tk-dev.json tx create msig.hypha approve '{
+# approve for buckyjohnson
+eosc -u https://test.telos.kitchen --vault-file ../../buckyjohnson/tk-dev.json tx create msig.hypha approve '{
   "proposer":"mt.hypha",
   "proposal_name":"test2",
   "level": 
     {
-      "actor": "teloskitchen", 
+      "actor": "buckyjohnson", 
       "permission": "active"
     }
-}' -p teloskitchen
+}' -p buckyjohnson
 ```
 
 # Step 4: Check approvals
@@ -195,7 +194,7 @@ $ eosc -u https://test.telos.kitchen get table msig.hypha mt.hypha approvals2
 # Step 5: After enough approvals, execute proposal
 ### cleos 
 ``` sh
-cleos -u http://test.telos.kitchen push action msig.hypha exec '["mt.hypha","mytestdeploy","my.hypha"] -p mt.hypha
+cleos -u http://test.telos.kitchen push action msig.hypha exec '["mt.hypha","test2","mt.hypha"] -p mt.hypha
 ```
 
 ### eosc
@@ -203,7 +202,7 @@ cleos -u http://test.telos.kitchen push action msig.hypha exec '["mt.hypha","myt
 ``` sh
 eosc -u https://test.telos.kitchen --vault-file ../mt.hypha.json tx create msig.hypha exec '{
   "proposer":"mt.hypha",
-  "proposal_name":"mytestdeploy",
+  "proposal_name":"test2",
   "executer": "mt.hypha"
 }' -p mt.hypha
 ```
@@ -255,28 +254,3 @@ eosc -u https://test.telos.kitchen --vault-file ../eosc-testnet-vault.json tx cr
     }
 }' -p test.hypha@owner
 ```
-
-eosc -u https://test.telos.kitchen --vault-file ../eosc-testnet-vault.json tx create eosio updateauth '{
-    "account": "msig.hypha",
-    "permission": "active",
-    "parent": "owner",
-    "auth": {
-        "keys": [
-            {
-                "key": "EOS6gHY8nXrsAexr7kW59PA1Zb9SsZpT51KrDE28821RwEo4cRwu8",
-                "weight": 1
-            }
-        ],
-        "threshold": 1,
-        "accounts": [
-            {
-                "permission": {
-                    "actor": "msig.hypha",
-                    "permission": "eosio.code"
-                },
-                "weight": 1
-            }
-        ],
-        "waits": []
-    }
-}' -p msig.hypha@owner
