@@ -5,7 +5,11 @@
 #include <eosio/ignore.hpp>
 #include <eosio/transaction.hpp>
 
-namespace eosio {
+#include <document_graph.hpp>
+
+using namespace eosio;
+
+namespace hyphaspace {
     
    /**
     * @defgroup eosiomsig eosio.msig
@@ -16,6 +20,9 @@ namespace eosio {
    class [[eosio::contract("msig")]] multisig : public contract {
       public:
          using contract::contract;
+
+         multisig(name self, name code, datastream<const char *> ds) : contract(self, code, ds) { }
+         ~multisig() {}
 
          /**
           * Create proposal
@@ -33,11 +40,15 @@ namespace eosio {
           * @param proposer - The account proposing a transaction
           * @param proposal_name - The name of the proposal (should be unique for proposer)
           * @param requested - Permission levels expected to approve the proposal
+          * @param content_groups - Documentation to accompany a proposal
           * @param trx - Proposed transaction
           */
          [[eosio::action]]
-         void propose(ignore<name> proposer, ignore<name> proposal_name,
-               ignore<std::vector<permission_level>> requested, ignore<transaction> trx);
+         void propose(  const name &proposer, 
+                        const name &proposal_name,
+                        const std::vector<permission_level> &requested, 
+                        const vector<document_graph::content_group> &content_groups,
+                        const transaction &trx);
          /**
           * Approve proposal
           *
@@ -125,23 +136,18 @@ namespace eosio {
          using invalidate_action = eosio::action_wrapper<name("invalidate"), &multisig::invalidate>;
 
       private:
+
+         document_graph _document_graph = document_graph (get_self());
+
          struct [[eosio::table]] proposal {
-            name                            proposal_name;
-            std::vector<char>               packed_transaction;
+            name                 proposal_name;
+            std::vector<char>    packed_transaction;
+            checksum256          document_hash;
 
             uint64_t primary_key()const { return proposal_name.value; }
          };
 
          typedef eosio::multi_index< name("proposal"), proposal > proposals;
-
-         // struct [[eosio::table]] old_approvals_info {
-         //    name                            proposal_name;
-         //    std::vector<permission_level>   requested_approvals;
-         //    std::vector<permission_level>   provided_approvals;
-
-         //    uint64_t primary_key()const { return proposal_name.value; }
-         // };
-         // typedef eosio::multi_index< name("approvals"), old_approvals_info > old_approvals;
 
          struct approval {
             permission_level level;
