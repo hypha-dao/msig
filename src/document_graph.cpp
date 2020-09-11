@@ -11,6 +11,19 @@ namespace hyphaspace
         return c;
     }
 
+    void document_graph::erase_document(const checksum256 &document_hash) 
+    {
+        document_table d_t(contract, contract.value);
+        auto hash_index = d_t.get_index<name("idhash")>();
+        auto h_itr = hash_index.find(document_hash);
+
+        auto byte_arr = document_hash.extract_as_byte_array();
+        string readable_hash = document_graph::to_hex((const char *)byte_arr.data(), byte_arr.size());
+        check (h_itr != hash_index.end(), "Cannot erase document; does not exist: " + readable_hash);
+        
+        hash_index.erase (h_itr);
+    }
+
     document_graph::document document_graph::create_document(const name &creator, const vector<content_group> &content_groups)
     {
         require_auth(creator);
@@ -38,25 +51,25 @@ namespace hyphaspace
 
             checksum256 content_hash = eosio::sha256(const_cast<char *>(string_data.c_str()), string_data.length());
 
-            auto hash_index = d_t.get_index<name("idhash")>();
-            auto h_itr = hash_index.find(content_hash);
+            // auto hash_index = d_t.get_index<name("idhash")>();
+            // auto h_itr = hash_index.find(content_hash);
 
-            auto byte_arr = content_hash.extract_as_byte_array();
-            string readable_hash = to_hex((const char *)byte_arr.data(), byte_arr.size());
+            // auto byte_arr = content_hash.extract_as_byte_array();
+            // string readable_hash = document_graph::to_hex((const char *)byte_arr.data(), byte_arr.size());
 
-            // if this content exists already, error out and send back the hash of the existing document
-            if (h_itr != hash_index.end())
-            {
-                check(false, "document exists already: " + readable_hash);
-            }
+            // // if this content exists already, error out and send back the hash of the existing document
+            // if (h_itr != hash_index.end())
+            // {
+            //     check(false, "document exists already: " + readable_hash);
+            // }
 
-            // write a 'free' created receipt to the blockchain history logs
-            action(
-                permission_level{contract, name("active")},
-                contract, name("created"),
-                std::make_tuple(d.creator, content_hash))
-                // std::make_tuple(d.hash, d.id, d.creator, d.content))  // TODO: troubleshoot "Error: inline action too big"
-                .send();
+            // // write a 'free' created receipt to the blockchain history logs
+            // action(
+            //     permission_level{contract, name("active")},
+            //     contract, name("created"),
+            //     std::make_tuple(d.creator, content_hash))
+            //     // std::make_tuple(d.hash, d.id, d.creator, d.content))  // TODO: troubleshoot "Error: inline action too big"
+            //     .send();
 
             d.hash = content_hash;
             document = d;
@@ -130,7 +143,7 @@ namespace hyphaspace
     // series of functions used to fingerprint each content object
     // TODO: is there a more performant way to achieve the same result?
     // TODO: put this into an interface or cleaner abstraction
-    std::string to_string(const document_graph::flexvalue &value)
+    std::string document_graph::to_string(const document_graph::flexvalue &value)
     {
         if (std::holds_alternative<int64_t>(value))
         {
@@ -161,12 +174,12 @@ namespace hyphaspace
         }
     }
 
-    std::string to_string(const document_graph::content &content)
+    std::string document_graph::to_string(const document_graph::content &content)
     {
         return "{" + string(content.label + "=" + to_string(content.value)) + "}";
     }
 
-    std::string to_string(const document_graph::content_group &content_group)
+    std::string document_graph::to_string(const document_graph::content_group &content_group)
     {
         string results = "[";
         bool is_first = true;
@@ -188,7 +201,7 @@ namespace hyphaspace
         return results;
     }
 
-    std::string to_string(const vector<document_graph::content_group> &content_groups)
+    std::string document_graph::to_string(const vector<document_graph::content_group> &content_groups)
     {
         string results = "[";
         bool is_first = true;
@@ -210,7 +223,7 @@ namespace hyphaspace
         return results;
     }
 
-    static std::string to_hex(const char *d, uint32_t s)
+    std::string document_graph::to_hex(const char *d, uint32_t s)
     {
         std::string r;
         const char *to_hex = "0123456789abcdef";

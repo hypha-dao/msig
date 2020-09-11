@@ -1,24 +1,26 @@
 #include <eosio/action.hpp>
 #include <eosio/crypto.hpp>
 #include <eosio/permission.hpp>
-
+#include <eosio/ignore.hpp>
 #include <msig.hpp>
+
 
 namespace hyphaspace
 {
 
-   void multisig::propose(const name &proposer,
-                          const name &proposal_name,
-                          const std::vector<permission_level> &requested,
-                          const vector<document_graph::content_group> &content_groups,
-                          const transaction &trx)
+   void multisig::propose(eosio::ignore<name> &proposer,
+                          eosio::ignore<name> &proposal_name,
+                          eosio::ignore<std::set<permission_level>> &requested,
+                          eosio::ignore<std::vector<document_graph::content_group>> &content_groups,
+                          eosio::ignore<transaction> &trx)
    {
       name _proposer;
       name _proposal_name;
-      std::vector<permission_level> _requested;
+      std::set<permission_level> _requested;
       transaction_header _trx_header;
+      std::vector<document_graph::content_group> _content_groups;
 
-      _ds >> _proposer >> _proposal_name >> _requested;
+      _ds >> _proposer >> _proposal_name >> _requested >> _content_groups;
 
       const char *trx_pos = _ds.pos();
       size_t size = _ds.remaining();
@@ -26,7 +28,7 @@ namespace hyphaspace
 
       require_auth(_proposer);
       check(_trx_header.expiration >= eosio::time_point_sec(current_time_point()), "transaction expired");
-      //check( trx_header.actions.size() > 0, "transaction must have at least one action" );
+      // //check( trx_header.actions.size() > 0, "transaction must have at least one action" );
 
       proposals proptable(get_self(), _proposer.value);
       check(proptable.find(_proposal_name.value) == proptable.end(), "proposal with the same name exists");
@@ -40,7 +42,7 @@ namespace hyphaspace
 
       check(res > 0, "transaction authorization failed");
 
-      document_graph::document doc = _document_graph.create_document(proposer, content_groups);
+      document_graph::document doc = _document_graph.create_document(_proposer, _content_groups);
 
       std::vector<char> pkd_trans;
       pkd_trans.resize(size);
@@ -113,6 +115,8 @@ namespace hyphaspace
       {
          check(unpack<transaction_header>(prop.packed_transaction).expiration < eosio::time_point_sec(current_time_point()), "cannot cancel until expiration");
       }
+
+      _document_graph.erase_document(prop.document_hash);
       proptable.erase(prop);
 
       //remove from new table
@@ -170,6 +174,7 @@ namespace hyphaspace
          act.send();
       }
 
+      _document_graph.erase_document(prop.document_hash);
       proptable.erase(prop);
    }
 

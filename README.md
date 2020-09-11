@@ -2,7 +2,7 @@
 # Step 1: Create Transaction file
 ### cleos
 ```
-cleos -u https://test.telos.kitchen set contract -sjd -x 186400 test.hypha test/test > test_deploy.json
+cleos -u https://test.telos.kitchen set contract -sjd -x 186400 test.hypha test > test_deploy.json
 ```
 
 ### eosc 
@@ -32,20 +32,58 @@ Before (head):
 ```
 
 After (head):
-> TODO: add document hash parameter to action, and document can contain link to Github, notes, etc...
 ``` json
 {
-  "proposer": "proposal_name",
+  "proposer": "mt.hypha",
   "proposal_name": "mytestdeploy",
   "requested": [
     {
-      "actor": "buckyjohnson",
+      "actor": "mt.hypha",
       "permission": "active"
     },
     {
-      "actor": "mt.hypha",
+      "actor": "teloskitchen",
       "permission": "active"
     }
+  ],
+  "content_groups": [
+    [
+      {
+        "label": "content_group_name",
+        "value": [
+          "string",
+          "Deployment Proposal Details"
+        ]
+      },
+      {
+        "label": "github_commit",
+        "value": [
+          "string",
+          "https://github.com/hypha-dao/test/commit/28e0a4bb8b03416727acb34c5ba61ed34bc0e42b"
+        ]
+      },
+      {
+        "label": "notes",
+        "value": [
+          "string",
+          "This smart contract update removes the bye action because it is no longer needed, per the policy document approved via the DHO"
+        ]
+      },
+      {
+        "label": "developer",
+        "value": [
+          "name",
+          "hyphanewyork"
+        ]
+      },
+      {
+        "label": "approved_policy_document",
+        "value": [
+          "checksum256",
+          "7b5755ce318c42fc750a754b4734282d1fad08e52c0de04762cb5f159a253c24"
+        ]
+      }
+    ]
   ],
   "trx": {
     "expiration": "2020-09-09T14:57:48",
@@ -68,23 +106,62 @@ cleos -u http://test.telos.kitchen push action msig.hypha propose ./test_deploy.
 ```
 
 ### eosc
-> NOTE: need to test this
-``` sh
+The ```content_groups``` parameter contains a link to the Github commit, a link to the business policy document for which this upgrade is updating, the developer name, and notes.  These will be presented in the UI when approvers view their queue.
+``` json
 eosc -u https://test.telos.kitchen --vault-file ../mt.hypha.json tx create msig.hypha propose '{
   "proposer": "mt.hypha",
   "proposal_name": "mytestdeploy",
   "requested": [
     {
-      "actor": "buckyjohnson",
+      "actor": "mt.hypha",
       "permission": "active"
     },
     {
-      "actor": "mt.hypha",
+      "actor": "teloskitchen",
       "permission": "active"
     }
   ],
+  "content_groups": [
+    [
+      {
+        "label": "content_group_name",
+        "value": [
+          "string",
+          "Deployment Proposal Details"
+        ]
+      },
+      {
+        "label": "github_commit",
+        "value": [
+          "string",
+          "https://github.com/hypha-dao/test/commit/28e0a4bb8b03416727acb34c5ba61ed34bc0e42b"
+        ]
+      },
+      {
+        "label": "notes",
+        "value": [
+          "string",
+          "This smart contract update removes the bye action because it is no longer needed, per the policy document approved via the DHO"
+        ]
+      },
+      {
+        "label": "developer",
+        "value": [
+          "name",
+          "hyphanewyork"
+        ]
+      },
+      {
+        "label": "approved_policy_document",
+        "value": [
+          "checksum256",
+          "7b5755ce318c42fc750a754b4734282d1fad08e52c0de04762cb5f159a253c24"
+        ]
+      }
+    ]
+  ],
   "trx": {
-    "expiration": "2020-09-10T14:57:48",
+    "expiration": "2020-09-09T14:57:48",
     "ref_block_num": 11290,
     "ref_block_prefix": 155158750,
     "max_net_usage_words": 0,
@@ -95,7 +172,7 @@ eosc -u https://test.telos.kitchen --vault-file ../mt.hypha.json tx create msig.
       {
         "account": "eosio",
         "name": "setcode",
-        "authorization": [
+         "authorization": [
           {
             "actor": "test.hypha",
             "permission": "active"
@@ -125,7 +202,7 @@ eosc -u https://test.telos.kitchen --vault-file ../mt.hypha.json tx create msig.
 }' -p mt.hypha
 ```
 
-Transaction will look like [this](https://eosauthority.com/transaction/7b5cd37768bd3d0625883064f03d195a06d5bf23d32f50f95947df813ae67729?network=telostest)
+Transaction will look like [this](https://eosauthority.com/transaction/3f658987e4b1c31be4936d9e20d5588979c2f442d42d9be3c933073e6dc7df43?network=telostest)
 
 # Step 4: Approve proposal
 > TODO: we can build a small UI screen in the DHO for linking to Github and running approvals
@@ -137,10 +214,10 @@ cleos -u https://test.telos.kitchen push action msig.hypha approve '{
   "proposal_name":"mytestdeploy",
   "level":
     {
-      "actor": "buckyjohnson",
+      "actor": "mt.hypha",
       "permission": "active"
     }
-}' -p buckyjohnson
+}' -p mt.hypha
 ```
 
 ### eosc
@@ -148,13 +225,13 @@ cleos -u https://test.telos.kitchen push action msig.hypha approve '{
 # approve for buckyjohnson
 eosc -u https://test.telos.kitchen --vault-file ../../buckyjohnson/tk-dev.json tx create msig.hypha approve '{
   "proposer":"mt.hypha",
-  "proposal_name":"test2",
+  "proposal_name":"mytestdeploy",
   "level": 
     {
-      "actor": "buckyjohnson", 
+      "actor": "mt.hypha", 
       "permission": "active"
     }
-}' -p buckyjohnson
+}' -p mt.hypha
 ```
 
 # Step 4: Check approvals
@@ -180,7 +257,7 @@ $ eosc -u https://test.telos.kitchen get table msig.hypha mt.hypha approvals2
         },
         {
           "level": {
-            "actor": "buckyjohnson",
+            "actor": "teloskitchen",
             "permission": "active"
           },
           "time": "2020-09-09T16:37:53.000"
@@ -194,12 +271,11 @@ $ eosc -u https://test.telos.kitchen get table msig.hypha mt.hypha approvals2
 # Step 5: After enough approvals, execute proposal
 ### cleos 
 ``` sh
-cleos -u http://test.telos.kitchen push action msig.hypha exec '["mt.hypha","test2","mt.hypha"] -p mt.hypha
+cleos -u http://test.telos.kitchen push action msig.hypha exec '["mt.hypha","mytestdeploy","mt.hypha"] -p mt.hypha
 ```
 
 ### eosc
-> NOTE: need to test this
-``` sh
+``` json
 eosc -u https://test.telos.kitchen --vault-file ../mt.hypha.json tx create msig.hypha exec '{
   "proposer":"mt.hypha",
   "proposal_name":"test2",
@@ -210,7 +286,7 @@ eosc -u https://test.telos.kitchen --vault-file ../mt.hypha.json tx create msig.
 
 # Setting permissions
 
-The system account ```eosio.msig``` is delegated to ```eosio@active```, the sudo permission.  In order to allow ```msig.hypha``` to update ```test.hypha```, the account we are 
+The system account ```eosio.msig``` is delegated to ```eosio@active```, the sudo permission.  In order to allow ```msig.hypha``` to update ```test.hypha```, the account must have the approvers and the ```msig.hypha``` account on the active permission in the following configuration.
 
 ``` json
 eosc -u https://test.telos.kitchen --vault-file ../eosc-testnet-vault.json tx create eosio updateauth '{
@@ -222,13 +298,6 @@ eosc -u https://test.telos.kitchen --vault-file ../eosc-testnet-vault.json tx cr
         "threshold": 2,
         "accounts": [
           {
-            "permission": {
-                    "actor": "buckyjohnson",
-                    "permission": "active"
-                },
-                "weight": 1
-          },
-            {
                 "permission": {
                     "actor": "msig.hypha",
                     "permission": "eosio.code"
@@ -238,6 +307,13 @@ eosc -u https://test.telos.kitchen --vault-file ../eosc-testnet-vault.json tx cr
              {
             "permission": {
                     "actor": "mt.hypha",
+                    "permission": "active"
+                },
+                "weight": 1
+          },
+             {
+            "permission": {
+                    "actor": "teloskitchen",
                     "permission": "active"
                 },
                 "weight": 1

@@ -1,7 +1,16 @@
 {
     "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
     "version": "eosio::abi/1.1",
-    "types": [],
+    "types": [
+        {
+            "new_type_name": "content_group",
+            "type": "content[]"
+        },
+        {
+            "new_type_name": "flexvalue",
+            "type": "variant_name_string_asset_time_point_int64_checksum256"
+        }
+    ],
     "structs": [
         {
             "name": "action",
@@ -102,6 +111,68 @@
             ]
         },
         {
+            "name": "certificate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "certifier",
+                    "type": "name"
+                },
+                {
+                    "name": "notes",
+                    "type": "string"
+                },
+                {
+                    "name": "certification_date",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
+            "name": "content",
+            "base": "",
+            "fields": [
+                {
+                    "name": "label",
+                    "type": "string"
+                },
+                {
+                    "name": "value",
+                    "type": "flexvalue"
+                }
+            ]
+        },
+        {
+            "name": "document",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "hash",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "creator",
+                    "type": "name"
+                },
+                {
+                    "name": "content_groups",
+                    "type": "content_group[]"
+                },
+                {
+                    "name": "certificates",
+                    "type": "certificate[]"
+                },
+                {
+                    "name": "created_date",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
             "name": "exec",
             "base": "",
             "fields": [
@@ -182,6 +253,10 @@
                 {
                     "name": "packed_transaction",
                     "type": "bytes"
+                },
+                {
+                    "name": "document_hash",
+                    "type": "checksum256"
                 }
             ]
         },
@@ -200,6 +275,10 @@
                 {
                     "name": "requested",
                     "type": "permission_level[]"
+                },
+                {
+                    "name": "content_groups",
+                    "type": "content_group[]"
                 },
                 {
                     "name": "trx",
@@ -308,8 +387,15 @@
     ],
     "tables": [
         {
-            "name": "approvals2",
+            "name": "approvals",
             "type": "approvals_info",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "documents",
+            "type": "document",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
@@ -330,5 +416,10 @@
         }
     ],
     "ricardian_clauses": [],
-    "variants": []
+    "variants": [
+        {
+            "name": "variant_name_string_asset_time_point_int64_checksum256",
+            "types": ["name","string","asset","time_point","int64","checksum256"]
+        }
+    ]
 }

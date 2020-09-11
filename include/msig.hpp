@@ -9,22 +9,18 @@
 
 using namespace eosio;
 
-namespace hyphaspace {
-    
-   /**
-    * @defgroup eosiomsig eosio.msig
-    * @ingroup eosiocontracts
-    * eosio.msig contract defines the structures and actions needed to manage the proposals and approvals on blockchain.
-    * @{
-    */
-   class [[eosio::contract("msig")]] multisig : public contract {
-      public:
-         using contract::contract;
+namespace hyphaspace
+{
 
-         multisig(name self, name code, datastream<const char *> ds) : contract(self, code, ds) { }
-         ~multisig() {}
+   class [[eosio::contract("msig")]] multisig : public contract
+   {
+   public:
+      using contract::contract;
 
-         /**
+      multisig(name self, name code, datastream<const char *> ds) : contract(self, code, ds) {}
+      ~multisig() {}
+
+      /**
           * Create proposal
           *
           * @details Creates a proposal containing one transaction.
@@ -43,13 +39,19 @@ namespace hyphaspace {
           * @param content_groups - Documentation to accompany a proposal
           * @param trx - Proposed transaction
           */
-         [[eosio::action]]
-         void propose(  const name &proposer, 
-                        const name &proposal_name,
-                        const std::vector<permission_level> &requested, 
-                        const vector<document_graph::content_group> &content_groups,
-                        const transaction &trx);
-         /**
+
+      [[eosio::action]] void propose(eosio::ignore<name> &proposer,
+                          eosio::ignore<name> &proposal_name,
+                          eosio::ignore<std::set<permission_level>> &requested,
+                          eosio::ignore<std::vector<document_graph::content_group>> &content_groups,
+                          eosio::ignore<transaction> &trx);
+      
+      // (const name &proposer,
+      //                                const name &proposal_name,
+      //                                const std::set<permission_level> &requested,
+      //                                const std::vector<document_graph::content_group> &content_groups,
+      //                                const transaction &trx);
+      /**
           * Approve proposal
           *
           * @details Approves an existing proposal
@@ -64,10 +66,9 @@ namespace hyphaspace {
           * @param level - Permission level approving the transaction
           * @param proposal_hash - Transaction's checksum
           */
-         [[eosio::action]]
-         void approve( name proposer, name proposal_name, permission_level level,
-                       const eosio::binary_extension<eosio::checksum256>& proposal_hash );
-         /**
+      [[eosio::action]] void approve(name proposer, name proposal_name, permission_level level,
+                                     const eosio::binary_extension<eosio::checksum256> &proposal_hash);
+      /**
           * Revoke proposal
           *
           * @details Revokes an existing proposal
@@ -79,9 +80,8 @@ namespace hyphaspace {
           * @param proposal_name - The name of the proposal (should be an existing proposal)
           * @param level - Permission level revoking approval for proposal
           */
-         [[eosio::action]]
-         void unapprove( name proposer, name proposal_name, permission_level level );
-         /**
+      [[eosio::action]] void unapprove(name proposer, name proposal_name, permission_level level);
+      /**
           * Cancel proposal
           *
           * @details Cancels an existing proposal
@@ -94,9 +94,8 @@ namespace hyphaspace {
           * only after time has expired on the proposed transaction. It removes corresponding entries from
           * internal proptable and from approval (or old approvals) tables as well.
           */
-         [[eosio::action]]
-         void cancel( name proposer, name proposal_name, name canceler );
-         /**
+      [[eosio::action]] void cancel(name proposer, name proposal_name, name canceler);
+      /**
           * Execute proposal
           *
           * @details Allows an `executer` account to execute a proposal.
@@ -115,9 +114,8 @@ namespace hyphaspace {
           * @param proposal_name - The name of the proposal (should be an existing proposal)
           * @param executer - The account executing the transaction
           */
-         [[eosio::action]]
-         void exec( name proposer, name proposal_name, name executer );
-         /**
+      [[eosio::action]] void exec(name proposer, name proposal_name, name executer);
+      /**
           * Invalidate proposal
           *
           * @details Allows an `account` to invalidate itself, that is, its name is added to
@@ -125,56 +123,97 @@ namespace hyphaspace {
           *
           * @param account - The account invalidating the transaction
           */
-         [[eosio::action]]
-         void invalidate( name account );
+      [[eosio::action]] void invalidate(name account);
 
-         using propose_action = eosio::action_wrapper<name("propose"), &multisig::propose>;
-         using approve_action = eosio::action_wrapper<name("approve"), &multisig::approve>;
-         using unapprove_action = eosio::action_wrapper<name("unapprove"), &multisig::unapprove>;
-         using cancel_action = eosio::action_wrapper<name("cancel"), &multisig::cancel>;
-         using exec_action = eosio::action_wrapper<name("exec"), &multisig::exec>;
-         using invalidate_action = eosio::action_wrapper<name("invalidate"), &multisig::invalidate>;
+      // using propose_action = eosio::action_wrapper<name("propose"), &multisig::propose>;
+      // using approve_action = eosio::action_wrapper<name("approve"), &multisig::approve>;
+      // using unapprove_action = eosio::action_wrapper<name("unapprove"), &multisig::unapprove>;
+      // using cancel_action = eosio::action_wrapper<name("cancel"), &multisig::cancel>;
+      // using exec_action = eosio::action_wrapper<name("exec"), &multisig::exec>;
+      // using invalidate_action = eosio::action_wrapper<name("invalidate"), &multisig::invalidate>;
 
-      private:
+   private:
+      document_graph _document_graph = document_graph(get_self());
 
-         document_graph _document_graph = document_graph (get_self());
+      typedef std::variant<name, string, asset, time_point, int64_t, checksum256> flexvalue;
 
-         struct [[eosio::table]] proposal {
-            name                 proposal_name;
-            std::vector<char>    packed_transaction;
-            checksum256          document_hash;
+        // a single labeled flexvalue
+        struct content
+        {
+            string label;
+            flexvalue value;
 
-            uint64_t primary_key()const { return proposal_name.value; }
-         };
+            EOSLIB_SERIALIZE(content, (label)(value))
+        };
 
-         typedef eosio::multi_index< name("proposal"), proposal > proposals;
+        typedef vector<content> content_group;
 
-         struct approval {
-            permission_level level;
-            time_point       time;
-         };
+      struct [[eosio::table]] proposal
+      {
+         name proposal_name;
+         std::vector<char> packed_transaction;
+         checksum256 document_hash;
 
-         struct [[eosio::table]] approvals_info {
-            uint8_t                 version = 1;
-            name                    proposal_name;
-            //requested approval doesn't need to cointain time, but we want requested approval
-            //to be of exact the same size ad provided approval, in this case approve/unapprove
-            //doesn't change serialized data size. So, we use the same type.
-            std::vector<approval>   requested_approvals;
-            std::vector<approval>   provided_approvals;
+         uint64_t primary_key() const { return proposal_name.value; }
 
-            uint64_t primary_key()const { return proposal_name.value; }
-         };
-         typedef eosio::multi_index< name("approvals"), approvals_info > approvals;
+         EOSLIB_SERIALIZE(proposal, (proposal_name)(packed_transaction)(document_hash))
+      };
 
-         struct [[eosio::table]] invalidation {
-            name         account;
-            time_point   last_invalidation_time;
+      typedef eosio::multi_index<name("proposal"), proposal> proposals;
 
-            uint64_t primary_key() const { return account.value; }
-         };
+      struct approval
+      {
+         permission_level level;
+         time_point time;
+      };
 
-         typedef eosio::multi_index< name("invals"), invalidation > invalidations;
+      struct [[eosio::table]] approvals_info
+      {
+         uint8_t version = 1;
+         name proposal_name;
+         //requested approval doesn't need to cointain time, but we want requested approval
+         //to be of exact the same size ad provided approval, in this case approve/unapprove
+         //doesn't change serialized data size. So, we use the same type.
+         std::vector<approval> requested_approvals;
+         std::vector<approval> provided_approvals;
+
+         uint64_t primary_key() const { return proposal_name.value; }
+      };
+      typedef eosio::multi_index<name("approvals"), approvals_info> approvals;
+
+      struct [[eosio::table]] invalidation
+      {
+         name account;
+         time_point last_invalidation_time;
+
+         uint64_t primary_key() const { return account.value; }
+      };
+
+      typedef eosio::multi_index<name("invals"), invalidation> invalidations;
+
+      struct [[eosio::table]] document
+      {
+         uint64_t id;
+         checksum256 hash;
+         name creator;
+         vector<document_graph::content_group> content_groups;
+
+         vector<document_graph::certificate> certificates;
+         uint64_t primary_key() const { return id; }
+         uint64_t by_creator() const { return creator.value; }
+         checksum256 by_hash() const { return hash; }
+
+         time_point created_date = current_time_point();
+         uint64_t by_created() const { return created_date.sec_since_epoch(); }
+
+         EOSLIB_SERIALIZE(document, (id)(hash)(creator)(content_groups)(certificates)(created_date))
+      };
+
+      typedef multi_index<name("documents"), document,
+                          indexed_by<name("idhash"), const_mem_fun<document, checksum256, &document::by_hash>>,
+                          indexed_by<name("bycreator"), const_mem_fun<document, uint64_t, &document::by_creator>>,
+                          indexed_by<name("bycreated"), const_mem_fun<document, uint64_t, &document::by_created>>>
+          document_table;
    };
    /** @}*/ // end of @defgroup eosiomsig eosio.msig
-} /// namespace eosio
+} // namespace hyphaspace

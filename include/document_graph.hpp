@@ -1,3 +1,5 @@
+#pragma once
+
 #include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
 #include <eosio/transaction.hpp>
@@ -40,7 +42,7 @@ namespace hyphaspace
             EOSLIB_SERIALIZE(certificate, (certifier)(notes)(certification_date))
         };
 
-        struct [[eosio::table]] document
+        struct [[eosio::table, eosio::contract("multisig")]] document
         {
             uint64_t id;
             checksum256 hash;
@@ -67,6 +69,7 @@ namespace hyphaspace
         // Any account/member can creator a new document
         document create_document(const name &creator, const vector<content_group> &content_groups);
 
+        void erase_document(const checksum256 &document_hash);
         // Transform a legacy object format to the new document format
         //   void transform_document(const name &scope, const uint64_t &id);
 
