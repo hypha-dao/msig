@@ -49,28 +49,6 @@
             ]
         },
         {
-            "name": "approvals_info",
-            "base": "",
-            "fields": [
-                {
-                    "name": "version",
-                    "type": "uint8"
-                },
-                {
-                    "name": "proposal_name",
-                    "type": "name"
-                },
-                {
-                    "name": "requested_approvals",
-                    "type": "approval[]"
-                },
-                {
-                    "name": "provided_approvals",
-                    "type": "approval[]"
-                }
-            ]
-        },
-        {
             "name": "approve",
             "base": "",
             "fields": [
@@ -173,6 +151,16 @@
             ]
         },
         {
+            "name": "erasedoc",
+            "base": "",
+            "fields": [
+                {
+                    "name": "hash",
+                    "type": "checksum256"
+                }
+            ]
+        },
+        {
             "name": "exec",
             "base": "",
             "fields": [
@@ -251,8 +239,20 @@
                     "type": "name"
                 },
                 {
+                    "name": "proposer",
+                    "type": "name"
+                },
+                {
                     "name": "packed_transaction",
                     "type": "bytes"
+                },
+                {
+                    "name": "requested_approvals",
+                    "type": "approval[]"
+                },
+                {
+                    "name": "provided_approvals",
+                    "type": "approval[]"
                 },
                 {
                     "name": "document_hash",
@@ -365,6 +365,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "erasedoc",
+            "type": "erasedoc",
+            "ricardian_contract": ""
+        },
+        {
             "name": "exec",
             "type": "exec",
             "ricardian_contract": ""
@@ -386,13 +391,6 @@
         }
     ],
     "tables": [
-        {
-            "name": "approvals",
-            "type": "approvals_info",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
         {
             "name": "documents",
             "type": "document",

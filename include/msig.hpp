@@ -20,6 +20,7 @@ namespace hyphaspace
       multisig(name self, name code, datastream<const char *> ds) : contract(self, code, ds) {}
       ~multisig() {}
 
+      ACTION erasedoc (const checksum256 &hash);
       /**
           * Create proposal
           *
@@ -41,16 +42,10 @@ namespace hyphaspace
           */
 
       [[eosio::action]] void propose(eosio::ignore<name> &proposer,
-                          eosio::ignore<name> &proposal_name,
-                          eosio::ignore<std::set<permission_level>> &requested,
-                          eosio::ignore<std::vector<document_graph::content_group>> &content_groups,
-                          eosio::ignore<transaction> &trx);
-      
-      // (const name &proposer,
-      //                                const name &proposal_name,
-      //                                const std::set<permission_level> &requested,
-      //                                const std::vector<document_graph::content_group> &content_groups,
-      //                                const transaction &trx);
+                                       eosio::ignore<name> &proposal_name,
+                                       eosio::ignore<std::set<permission_level>> &requested,
+                                       eosio::ignore<std::vector<document_graph::content_group>> &content_groups,
+                                       eosio::ignore<transaction> &trx);
       /**
           * Approve proposal
           *
@@ -135,23 +130,19 @@ namespace hyphaspace
    private:
       document_graph _document_graph = document_graph(get_self());
 
-      typedef std::variant<name, string, asset, time_point, int64_t, checksum256> flexvalue;
-
-        // a single labeled flexvalue
-        struct content
-        {
-            string label;
-            flexvalue value;
-
-            EOSLIB_SERIALIZE(content, (label)(value))
-        };
-
-        typedef vector<content> content_group;
+      struct approval
+      {
+         permission_level level;
+         time_point time;
+      };
 
       struct [[eosio::table]] proposal
       {
          name proposal_name;
+         name proposer;
          std::vector<char> packed_transaction;
+         std::vector<approval> requested_approvals;
+         std::vector<approval> provided_approvals;
          checksum256 document_hash;
 
          uint64_t primary_key() const { return proposal_name.value; }
@@ -160,26 +151,6 @@ namespace hyphaspace
       };
 
       typedef eosio::multi_index<name("proposal"), proposal> proposals;
-
-      struct approval
-      {
-         permission_level level;
-         time_point time;
-      };
-
-      struct [[eosio::table]] approvals_info
-      {
-         uint8_t version = 1;
-         name proposal_name;
-         //requested approval doesn't need to cointain time, but we want requested approval
-         //to be of exact the same size ad provided approval, in this case approve/unapprove
-         //doesn't change serialized data size. So, we use the same type.
-         std::vector<approval> requested_approvals;
-         std::vector<approval> provided_approvals;
-
-         uint64_t primary_key() const { return proposal_name.value; }
-      };
-      typedef eosio::multi_index<name("approvals"), approvals_info> approvals;
 
       struct [[eosio::table]] invalidation
       {
@@ -215,5 +186,5 @@ namespace hyphaspace
                           indexed_by<name("bycreated"), const_mem_fun<document, uint64_t, &document::by_created>>>
           document_table;
    };
-   /** @}*/ // end of @defgroup eosiomsig eosio.msig
+   /** @}*/ // end of @defgroup multisig msig.hypha
 } // namespace hyphaspace
