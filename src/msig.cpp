@@ -4,9 +4,13 @@
 #include <eosio/ignore.hpp>
 #include <msig.hpp>
 
-
 namespace hyphaspace
 {
+
+   void multisig::erasedoc (const checksum256 &hash)
+   {
+      _document_graph.erase_document(hash);
+   }
 
    void multisig::propose(eosio::ignore<name> &proposer,
                           eosio::ignore<name> &proposal_name,
@@ -28,10 +32,6 @@ namespace hyphaspace
 
       require_auth(_proposer);
       check(_trx_header.expiration >= eosio::time_point_sec(current_time_point()), "transaction expired");
-      // //check( trx_header.actions.size() > 0, "transaction must have at least one action" );
-
-      proposals proptable(get_self(), _proposer.value);
-      check(proptable.find(_proposal_name.value) == proptable.end(), "proposal with the same name exists");
 
       auto packed_requested = pack(_requested);
 
@@ -47,19 +47,19 @@ namespace hyphaspace
       std::vector<char> pkd_trans;
       pkd_trans.resize(size);
       memcpy((char *)pkd_trans.data(), trx_pos, size);
-      proptable.emplace(_proposer, [&](auto &prop) {
+
+      proposals proptable(get_self(), get_self().value);
+      check(proptable.find(_proposal_name.value) == proptable.end(), "proposal with the same name exists");
+
+      proptable.emplace(get_self(), [&](auto &prop) {
+         prop.proposer = _proposer;
          prop.proposal_name = _proposal_name;
          prop.packed_transaction = pkd_trans;
          prop.document_hash = doc.hash;
-      });
-
-      approvals apptable(get_self(), _proposer.value);
-      apptable.emplace(_proposer, [&](auto &a) {
-         a.proposal_name = _proposal_name;
-         a.requested_approvals.reserve(_requested.size());
+         prop.requested_approvals.reserve(_requested.size());
          for (auto &level : _requested)
          {
-            a.requested_approvals.push_back(approval{level, time_point{microseconds{0}}});
+            prop.requested_approvals.push_back(approval{level, time_point{microseconds{0}}});
          }
       });
    }
@@ -76,16 +76,16 @@ namespace hyphaspace
          assert_sha256(prop.packed_transaction.data(), prop.packed_transaction.size(), *proposal_hash);
       }
 
-      approvals apptable(get_self(), proposer.value);
-      auto apps_it = apptable.find(proposal_name.value);
-      check(apps_it != apptable.end(), "approvals not found");
+      proposals proptable(get_self(), get_self().value);
+      auto p_itr = proptable.find(proposal_name.value);
+      check(p_itr != proptable.end(), "proposal does not exist: " + proposal_name.to_string());
 
-      auto itr = std::find_if(apps_it->requested_approvals.begin(), apps_it->requested_approvals.end(), [&](const approval &a) { return a.level == level; });
-      check(itr != apps_it->requested_approvals.end(), "approval is not on the list of requested approvals");
+      auto itr = std::find_if(p_itr->requested_approvals.begin(), p_itr->requested_approvals.end(), [&](const approval &a) { return a.level == level; });
+      check(itr != p_itr->requested_approvals.end(), "approval is not on the list of requested approvals");
 
-      apptable.modify(apps_it, proposer, [&](auto &a) {
-         a.provided_approvals.push_back(approval{level, current_time_point()});
-         a.requested_approvals.erase(itr);
+      proptable.modify(p_itr, get_self(), [&](auto &p) {
+         p.provided_approvals.push_back(approval{level, current_time_point()});
+         p.requested_approvals.erase(itr);
       });
    }
 
@@ -93,14 +93,15 @@ namespace hyphaspace
    {
       require_auth(level);
 
-      approvals apptable(get_self(), proposer.value);
-      auto apps_it = apptable.find(proposal_name.value);
-      check(apps_it != apptable.end(), "approvals not found");
-      auto itr = std::find_if(apps_it->provided_approvals.begin(), apps_it->provided_approvals.end(), [&](const approval &a) { return a.level == level; });
-      check(itr != apps_it->provided_approvals.end(), "no approval previously granted");
-      apptable.modify(apps_it, proposer, [&](auto &a) {
-         a.requested_approvals.push_back(approval{level, current_time_point()});
-         a.provided_approvals.erase(itr);
+      proposals proptable(get_self(), get_self().value);
+      auto p_itr = proptable.find(proposal_name.value);
+      check(p_itr != proptable.end(), "proposal does not exist: " + proposal_name.to_string());
+      
+      auto itr = std::find_if(p_itr->provided_approvals.begin(), p_itr->provided_approvals.end(), [&](const approval &a) { return a.level == level; });
+      check(itr != p_itr->provided_approvals.end(), "no approval previously granted");
+      proptable.modify(p_itr, get_self(), [&](auto &p) {
+         p.requested_approvals.push_back(approval{level, current_time_point()});
+         p.provided_approvals.erase(itr);
       });
    }
 
@@ -108,7 +109,7 @@ namespace hyphaspace
    {
       require_auth(canceler);
 
-      proposals proptable(get_self(), proposer.value);
+      proposals proptable(get_self(), get_self().value);
       auto &prop = proptable.get(proposal_name.value, "proposal not found");
 
       if (canceler != proposer)
@@ -118,21 +119,13 @@ namespace hyphaspace
 
       _document_graph.erase_document(prop.document_hash);
       proptable.erase(prop);
-
-      //remove from new table
-      approvals apptable(get_self(), proposer.value);
-      auto apps_it = apptable.find(proposal_name.value);
-      if (apps_it != apptable.end())
-      {
-         apptable.erase(apps_it);
-      }
    }
 
    void multisig::exec(name proposer, name proposal_name, name executer)
    {
       require_auth(executer);
 
-      proposals proptable(get_self(), proposer.value);
+      proposals proptable(get_self(), get_self().value);
       auto &prop = proptable.get(proposal_name.value, "proposal not found");
       transaction_header trx_header;
       std::vector<action> context_free_actions;
@@ -144,14 +137,14 @@ namespace hyphaspace
       check(context_free_actions.empty(), "not allowed to `exec` a transaction with context-free actions");
       ds >> actions;
 
-      approvals apptable(get_self(), proposer.value);
-      auto apps_it = apptable.find(proposal_name.value);
+      // approvals apptable(get_self(), proposer.value);
+      // auto apps_it = apptable.find(proposal_name.value);
       std::vector<permission_level> approvals;
       invalidations inv_table(get_self(), get_self().value);
-      check(apps_it != apptable.end(), "approvals not found");
+      // check(apps_it != apptable.end(), "approvals not found");
 
-      approvals.reserve(apps_it->provided_approvals.size());
-      for (auto &p : apps_it->provided_approvals)
+      approvals.reserve(prop.provided_approvals.size());
+      for (auto &p : prop.provided_approvals)
       {
          auto it = inv_table.find(p.level.actor.value);
          if (it == inv_table.end() || it->last_invalidation_time < p.time)
@@ -159,7 +152,6 @@ namespace hyphaspace
             approvals.push_back(p.level);
          }
       }
-      apptable.erase(apps_it);
 
       auto packed_provided_approvals = pack(approvals);
       auto res = check_transaction_authorization(

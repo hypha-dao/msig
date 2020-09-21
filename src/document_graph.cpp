@@ -11,6 +11,9 @@ namespace hyphaspace
         return c;
     }
 
+    // unsure how erasing documents should be handled, re: approvals 
+    // for now, permissions should be handled in the contract action rather than this class
+    // TODO: come back to this in the future
     void document_graph::erase_document(const checksum256 &document_hash) 
     {
         document_table d_t(contract, contract.value);
@@ -51,25 +54,25 @@ namespace hyphaspace
 
             checksum256 content_hash = eosio::sha256(const_cast<char *>(string_data.c_str()), string_data.length());
 
-            // auto hash_index = d_t.get_index<name("idhash")>();
-            // auto h_itr = hash_index.find(content_hash);
+            auto hash_index = d_t.get_index<name("idhash")>();
+            auto h_itr = hash_index.find(content_hash);
 
-            // auto byte_arr = content_hash.extract_as_byte_array();
-            // string readable_hash = document_graph::to_hex((const char *)byte_arr.data(), byte_arr.size());
+            auto byte_arr = content_hash.extract_as_byte_array();
+            string readable_hash = document_graph::to_hex((const char *)byte_arr.data(), byte_arr.size());
 
-            // // if this content exists already, error out and send back the hash of the existing document
-            // if (h_itr != hash_index.end())
-            // {
-            //     check(false, "document exists already: " + readable_hash);
-            // }
+            // if this content exists already, error out and send back the hash of the existing document
+            if (h_itr != hash_index.end())
+            {
+                check(false, "document exists already: " + readable_hash);
+            }
 
-            // // write a 'free' created receipt to the blockchain history logs
-            // action(
-            //     permission_level{contract, name("active")},
-            //     contract, name("created"),
-            //     std::make_tuple(d.creator, content_hash))
-            //     // std::make_tuple(d.hash, d.id, d.creator, d.content))  // TODO: troubleshoot "Error: inline action too big"
-            //     .send();
+            // write a 'free' created receipt to the blockchain history logs
+            action(
+                permission_level{contract, name("active")},
+                contract, name("created"),
+                std::make_tuple(d.creator, content_hash))
+                // std::make_tuple(d.hash, d.id, d.creator, d.content))  // TODO: troubleshoot "Error: inline action too big"
+            .send();
 
             d.hash = content_hash;
             document = d;
@@ -98,6 +101,7 @@ namespace hyphaspace
 
             // TODO: where should the parent hash go?
             content_group cg {};
+            cg.push_back(document_graph::new_content("content_group_label", "system"));
             cg.push_back(document_graph::new_content("parent", hash));
             d.content_groups.push_back(cg);
 

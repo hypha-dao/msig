@@ -70,8 +70,9 @@ namespace hyphaspace
         document create_document(const name &creator, const vector<content_group> &content_groups);
 
         void erase_document(const checksum256 &document_hash);
+
         // Transform a legacy object format to the new document format
-        //   void transform_document(const name &scope, const uint64_t &id);
+        void transform_document(const name &scope, const uint64_t &id);
 
         // Fork creates a new document (node in a graph) from an existing document.
         // The forked content should contain only new or updated entries to avoid data duplication. (lazily enforced?)
@@ -84,6 +85,12 @@ namespace hyphaspace
 
         certificate new_certificate(const name &certifier, const string &notes);
         content new_content(const string &label, const flexvalue &fv);
+
+        // accessors
+        document get_document (const checksum256 &hash);
+        document get_parent (const document &document);
+        content_group get_content_group (const document &document, const string &content_group_label);
+        flexvalue get_content (const content_group &content_group, const string& content_label);
 
         std::string to_string(const vector<document_graph::content_group> &content_groups);
         std::string to_string(const document_graph::content_group &content_group);
