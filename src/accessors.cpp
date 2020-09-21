@@ -12,16 +12,16 @@ namespace hyphaspace
         string readable_hash = document_graph::to_hex((const char *)byte_arr.data(), byte_arr.size());
 
         // if this content exists already, error out and send back the hash of the existing document
-        check(h_itr != hash_index.end(), "parent does not exist: " + readable_hash);
-        return &h_itr;
+        check(h_itr != hash_index.end(), "document hash does not exist: " + readable_hash);
+        return *h_itr;
     }
 
     document_graph::document document_graph::get_parent(const document &document)
     {
         auto content_group = get_content_group(document, "system");
-        auto content = get_content(content_group, "parent");
-        check(std::holds_alternative<checksum256>(content.value), "fatal error: system::parent content item is not a checksum256");
-        return get_document(std::get<checksum256>(content.value));
+        hyphaspace::document_graph::flexvalue content = get_content(content_group, "parent");
+        check(std::holds_alternative<checksum256>(content), "fatal error: system::parent content item is not a checksum256");
+        return get_document(std::get<checksum256>(content));
     }
 
     document_graph::content_group document_graph::get_content_group(const document &document, const string &content_group_label)
@@ -40,7 +40,8 @@ namespace hyphaspace
                 }
             }
         }
-        return nullptr;
+        // return an empty object
+        return std::__1::vector<hyphaspace::document_graph::content, std::__1::allocator<hyphaspace::document_graph::content>>{};
     }
 
     document_graph::flexvalue document_graph::get_content(const content_group &content_group,

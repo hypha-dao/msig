@@ -12,7 +12,7 @@ using namespace eosio;
 namespace hyphaspace
 {
 
-   class [[eosio::contract("msig")]] multisig : public contract
+   class [[eosio::contract("multisig")]] multisig : public contract
    {
    public:
       using contract::contract;
