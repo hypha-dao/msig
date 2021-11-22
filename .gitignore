@@ -5,7 +5,7 @@ build
 ricardian
 **/Makefile
 **/CMakeCache.txt
-msig_project-prefix
+multisig_project-prefix
 **/*.wasm
 **/.nyc*
 **/.nyc_output/**
